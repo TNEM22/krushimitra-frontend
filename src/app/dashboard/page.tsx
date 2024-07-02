@@ -1,11 +1,12 @@
 "use client";
+
 import React, { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import { Button } from "@/components/ui/button";
 import Dashboard from "./home";
 import Component from "./home2";
 
-const page = () => {
+function Page() {
   const [token, setToken] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -41,6 +42,6 @@ const page = () => {
   // );
   return <Dashboard name={name} email={email} role={role} signOut={signOut} />;
   // return <Component />;
-};
+}
 
-export default page;
+export default Page;
