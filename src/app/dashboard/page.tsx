@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import { Button } from "@/components/ui/button";
 import Dashboard from "./home";
-import Component from "./home2";
+// import Component from "./home2";
 
 function Page() {
   const [token, setToken] = useState("");
