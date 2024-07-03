@@ -2,15 +2,15 @@
 
 import React, { useEffect, useState } from "react";
 import Cookies from "js-cookie";
-import { Button } from "@/components/ui/button";
-import Dashboard from "./home";
-// import Component from "./home2";
+import FarmerDashboard from "./farmer";
+import ExpertDashboard from "./expert";
 
 function Page() {
   const [token, setToken] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("");
+  const [exp, setExp] = useState(0);
 
   useEffect(() => {
     const token = Cookies.get("token");
@@ -22,6 +22,9 @@ function Page() {
       setName(JSON.parse(user).name);
       setEmail(JSON.parse(user).email);
       setRole(JSON.parse(user).role);
+      if (JSON.parse(user).role === "expert") {
+        setExp(JSON.parse(user).exp);
+      }
     }
   }, []);
 
@@ -31,17 +34,25 @@ function Page() {
     window.location.href = "/";
   };
 
-  // return (
-  //   <>
-  //     <div>Dashboard</div>
-  //     <h3>{name}</h3>
-  //     <h3>{email}</h3>
-  //     <h3>{role}</h3>
-  //     <Button onClick={signOut}>Sign Out</Button>
-  //   </>
-  // );
-  return <Dashboard name={name} email={email} role={role} signOut={signOut} />;
-  // return <Component />;
+  if (role === "farmer")
+    return (
+      <FarmerDashboard
+        name={name}
+        email={email}
+        role={role}
+        signOut={signOut}
+      />
+    );
+  else
+    return (
+      <ExpertDashboard
+        name={name}
+        email={email}
+        role={role}
+        exp={exp}
+        signOut={signOut}
+      />
+    );
 }
 
 export default Page;

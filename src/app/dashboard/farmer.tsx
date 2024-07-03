@@ -2,23 +2,14 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   ChevronDownIcon,
-  File,
   GlobeIcon,
   Home,
-  LineChart,
   ListFilter,
-  MoreHorizontal,
   Package,
-  Package2,
   PanelLeft,
-  PlusCircle,
   Search,
-  Settings,
   ShoppingCart,
-  Users2,
 } from "lucide-react";
-
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -34,9 +25,9 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import {
   DropdownMenu,
@@ -49,16 +40,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Tooltip,
@@ -67,7 +49,10 @@ import {
   TooltipProvider,
 } from "@/components/ui/tooltip";
 
-import React from "react";
+import React, { useEffect } from "react";
+import { useState } from "react";
+import { MoonIcon, SunIcon } from "lucide-react";
+import { getExperts } from "../utils/apis";
 
 interface DashboardProps {
   name: string;
@@ -76,14 +61,53 @@ interface DashboardProps {
   signOut: () => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({
+const FarmerDashboard: React.FC<DashboardProps> = ({
   name,
   email,
   role,
   signOut,
 }) => {
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [refreshButtonColor, setRefreshButtonColor] =
+    useState("/reload-light.svg");
+  const [mainColor, setMainColor] = useState(
+    "flex min-h-screen w-full flex-col bg-muted/40"
+  );
+  const [mainColor2, setMainColor2] = useState(
+    "grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8"
+  );
+  const handleDarkModeToggle = () => {
+    setIsDarkMode((prev) => !prev);
+    if (!isDarkMode) {
+      setMainColor("flex h-full w-full flex-col bg-black dark text-foreground");
+      setMainColor2(
+        "grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 bg-black"
+      );
+      setRefreshButtonColor("/reload-dark.svg");
+    } else {
+      setMainColor("flex min-h-screen w-full flex-col bg-muted/40");
+      setMainColor2(
+        "grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8"
+      );
+      setRefreshButtonColor("/reload-light.svg");
+    }
+  };
+  const [experts, setExperts] = useState<any[]>([]);
+  const GetExperts = async () => {
+    const result = await getExperts();
+    setExperts(result.data.users);
+    if (result.status !== "success") {
+      console.log(result);
+    } else {
+      // console.log(experts);
+      console.log("success");
+    }
+  };
+  useEffect(() => {
+    GetExperts();
+  });
   return (
-    <div className="flex min-h-screen w-full flex-col bg-muted/40">
+    <div className={mainColor}>
       {/* Side Bar For laptop and desktops */}
       <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex">
         <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
@@ -208,21 +232,32 @@ const Dashboard: React.FC<DashboardProps> = ({
                   <DropdownMenuRadioItem value="hi">
                     हिंदी
                   </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="jp">
-                    日本語
-                  </DropdownMenuRadioItem>
                 </DropdownMenuRadioGroup>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
           {/* Search the experts */}
-          <div className="relative ml-auto flex-1 md:grow-0">
+          {/* <div className="relative ml-auto flex-1 md:grow-0">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
               placeholder="Search..."
               className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
             />
+          </div> */}
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDarkModeToggle}
+              className="bg-muted hover:bg-muted-foreground"
+            >
+              {isDarkMode ? (
+                <MoonIcon className="w-5 h-5" />
+              ) : (
+                <SunIcon className="w-5 h-5" />
+              )}
+            </Button>
           </div>
           {/* Profile options */}
           <DropdownMenu>
@@ -253,7 +288,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
-        <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+        <main className={mainColor2}>
           <Tabs defaultValue="all" className="h-full">
             {/* Tabs and Filters */}
             <div className="flex items-center">
@@ -289,130 +324,69 @@ const Dashboard: React.FC<DashboardProps> = ({
             <TabsContent value="all">
               <Card x-chunk="dashboard-06-chunk-0">
                 <CardHeader>
-                  <CardTitle>Experts</CardTitle>
+                  <CardTitle className="w-full flex justify-between items-center">
+                    Experts
+                    <span>
+                      <Image
+                        className="cursor-pointer"
+                        src={refreshButtonColor}
+                        alt="reload button"
+                        width={25}
+                        height={25}
+                      />
+                    </span>
+                  </CardTitle>
                   <CardDescription>Get your best experts.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="hidden w-[100px] sm:table-cell">
-                          <span className="sr-only">Image</span>
-                        </TableHead>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="hidden md:table-cell">
-                          Price
-                        </TableHead>
-                        <TableHead className="hidden md:table-cell">
-                          Rating
-                        </TableHead>
-                        <TableHead className="hidden md:table-cell">
-                          Created at
-                        </TableHead>
-                        <TableHead>
-                          <span className="sr-only">Actions</span>
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      <TableRow>
-                        <TableCell className="hidden sm:table-cell">
-                          {/* <Image
-                            alt="Expert image"
-                            className="aspect-square rounded-md object-cover"
-                            height="64"
-                            src="/placeholder.svg"
-                            width="64"
-                          /> */}
-                          <Avatar>
-                            <AvatarImage
-                              src="https://github.com/shadcn.png"
-                              alt="Expert"
-                            />
-                            <AvatarFallback>Expert</AvatarFallback>
-                          </Avatar>
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          Mukesh Muralidhar Mali
-                        </TableCell>
-                        <TableCell>
-                          {/* <Badge className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20"> */}
-                          <Badge className="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/10">
-                            Offline
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          ₹9 .Hr
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          4.5
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          09:30 AM - 5:30 PM
-                        </TableCell>
-                        <TableCell>
-                          <button
-                            type="button"
-                            className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    {experts.map((expert: any) => (
+                      <Card key={expert._id} className="relative max-w-60">
+                        <img
+                          src={expert.photo}
+                          alt={"someone"}
+                          width={200}
+                          height={200}
+                          className="rounded-t-lg object-cover w-full aspect-square"
+                        />
+                        <Badge className="absolute top-2 right-2 inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/10 hover:bg-red-50 cursor-default">
+                          {expert.status}
+                        </Badge>
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="font-bold">{expert.name}</h3>
+                              <p className="text-muted-foreground text-sm">
+                                {expert.exp} years experience
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold">
+                                ₹{expert.hourlyRate}/hr
+                              </p>
+                            </div>
+                          </div>
+                        </CardContent>
+                        <CardFooter className="flex justify-between items-center p-4 bg-muted">
+                          <Button
+                            variant="default"
+                            // onClick={() => handleConnectClick(expert)}
+                            className="flex-1 mr-2"
                           >
                             Connect
-                          </button>
-                        </TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="hidden sm:table-cell">
-                          {/* <Image
-                            alt="Expert image"
-                            className="aspect-square rounded-md object-cover"
-                            height="64"
-                            src="/placeholder.svg"
-                            width="64"
-                          /> */}
-                          <Avatar>
-                            <AvatarImage
-                              src="https://github.com/shadcn.png"
-                              alt="Expert"
-                            />
-                            <AvatarFallback>Expert</AvatarFallback>
-                          </Avatar>
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          Pundalik Ramlal Bhamare
-                        </TableCell>
-                        <TableCell>
-                          {/* <Badge className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20"> */}
-                          <Badge className="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/10">
-                            Offline
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          ₹9 .Hr
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          4.5
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          09:30 AM - 5:30 PM
-                        </TableCell>
-                        <TableCell>
-                          <button
-                            type="button"
-                            className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
+                          </Button>
+                          <Button
+                            variant="outline"
+                            // onClick={() => handleViewMore(expert)}
+                            className="flex-1"
                           >
-                            Connect
-                          </button>
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </CardContent>
-                {/* <CardFooter>
-                  <div className="text-xs text-muted-foreground">
-                    Showing <strong>1-10</strong> of <strong>32</strong>{" "}
-                    products
+                            View More
+                          </Button>
+                        </CardFooter>
+                      </Card>
+                    ))}
                   </div>
-                </CardFooter> */}
+                </CardContent>
               </Card>
             </TabsContent>
             <TabsContent value="visited" className="h-full">
@@ -429,4 +403,4 @@ const Dashboard: React.FC<DashboardProps> = ({
   );
 };
 
-export default Dashboard;
+export default FarmerDashboard;
