@@ -17,6 +17,21 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <title>Krushimitra</title>
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <meta property="og:image" content="/favicon.png" />
+        <meta property="og:image:type" content="image/png" />
+        <meta property="og:image:width" content="1024" />
+        <meta property="og:image:height" content="1024" />
+        <meta property="og:image:alt" content="Krushimitra" />
+        <meta property="og:title" content="Krushimitra" />
+        <meta property="og:description" content="Krushimitra helping farmers" />
+        <meta
+          property="og:url"
+          content="https://krushimitra-frontend.vercel.app/"
+        />
+      </head>
       <body className={inter.className}>
         {children}
         <Toaster />
