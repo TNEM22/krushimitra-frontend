@@ -43,7 +43,7 @@ function Page() {
         signOut={signOut}
       />
     );
-  else
+  else if (role === "expert")
     return (
       <ExpertDashboard
         name={name}

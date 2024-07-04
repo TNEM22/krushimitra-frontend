@@ -49,10 +49,12 @@ import {
   TooltipProvider,
 } from "@/components/ui/tooltip";
 
-import React, { useEffect } from "react";
+import React, { Suspense, useEffect } from "react";
 import { useState } from "react";
 import { MoonIcon, SunIcon } from "lucide-react";
-import { getExperts } from "../utils/apis";
+import { appointExpert, getExperts, rejectExpert } from "../utils/apis";
+import Cookies from "js-cookie";
+import { toast } from "@/components/ui/use-toast";
 
 interface DashboardProps {
   name: string;
@@ -92,8 +94,10 @@ const FarmerDashboard: React.FC<DashboardProps> = ({
       setRefreshButtonColor("/reload-light.svg");
     }
   };
+  const [isFetching, setIsFetching] = useState(false);
   const [experts, setExperts] = useState<any[]>([]);
   const GetExperts = async () => {
+    setIsFetching(true);
     const result = await getExperts();
     setExperts(result.data.users);
     if (result.status !== "success") {
@@ -102,10 +106,54 @@ const FarmerDashboard: React.FC<DashboardProps> = ({
       // console.log(experts);
       console.log("success");
     }
+    setIsFetching(false);
   };
   useEffect(() => {
     GetExperts();
-  });
+  }, []);
+
+  const token = Cookies.get("token");
+  const handleExpert = async (expertId: string) => {
+    const btn = document.getElementById(expertId);
+    console.log(btn?.innerText);
+    if (btn?.innerText === "Connect") {
+      btn.innerText = "Connecting";
+      btn.classList.add("bg-yellow-600", "hover:bg-yellow-600");
+      const result = await appointExpert(token, expertId);
+      if (result.status === "success") {
+        toast({
+          title: "Appointment Booked",
+        });
+        btn.innerText = "Connecting";
+        btn.classList.add("bg-yellow-600", "hover:bg-yellow-600");
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Appointment Not Booked",
+        });
+        btn.innerText = "Connect";
+        btn.classList.remove("bg-yellow-600", "hover:bg-yellow-600");
+      }
+    } else if (btn?.innerText === "Connecting") {
+      btn.innerText = "Connect";
+      btn.classList.remove("bg-yellow-600", "hover:bg-yellow-600");
+      const result = await rejectExpert(token, expertId);
+      if (result.status === "success") {
+        toast({
+          title: "Appointment Cancelled",
+        });
+        btn.innerText = "Connect";
+        btn.classList.remove("bg-yellow-600", "hover:bg-yellow-600");
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Appointment Not Cancelled",
+        });
+        btn.innerText = "Connecting";
+        btn.classList.add("bg-yellow-600", "hover:bg-yellow-600");
+      }
+    }
+  };
   return (
     <div className={mainColor}>
       {/* Side Bar For laptop and desktops */}
@@ -240,11 +288,11 @@ const FarmerDashboard: React.FC<DashboardProps> = ({
           {/* <div className="relative ml-auto flex-1 md:grow-0">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              type="search"
-              placeholder="Search..."
-              className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
+            type="search"
+            placeholder="Search..."
+            className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
             />
-          </div> */}
+            </div> */}
           <div className="flex items-center gap-4">
             <Button
               variant="outline"
@@ -328,11 +376,14 @@ const FarmerDashboard: React.FC<DashboardProps> = ({
                     Experts
                     <span>
                       <Image
-                        className="cursor-pointer"
                         src={refreshButtonColor}
                         alt="reload button"
                         width={25}
                         height={25}
+                        onClick={GetExperts}
+                        className={`cursor-pointer transition-transform duration-700 ${
+                          isFetching ? "rotate-animation" : ""
+                        }`}
                       />
                     </span>
                   </CardTitle>
@@ -340,51 +391,65 @@ const FarmerDashboard: React.FC<DashboardProps> = ({
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    {experts.map((expert: any) => (
-                      <Card key={expert._id} className="relative max-w-60">
-                        <img
-                          src={expert.photo}
-                          alt={"someone"}
-                          width={200}
-                          height={200}
-                          className="rounded-t-lg object-cover w-full aspect-square"
-                        />
-                        <Badge className="absolute top-2 right-2 inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/10 hover:bg-red-50 cursor-default">
-                          {expert.status}
-                        </Badge>
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h3 className="font-bold">{expert.name}</h3>
-                              <p className="text-muted-foreground text-sm">
-                                {expert.exp} years experience
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-bold">
-                                ₹{expert.hourlyRate}/hr
-                              </p>
-                            </div>
-                          </div>
-                        </CardContent>
-                        <CardFooter className="flex justify-between items-center p-4 bg-muted">
-                          <Button
-                            variant="default"
-                            // onClick={() => handleConnectClick(expert)}
-                            className="flex-1 mr-2"
-                          >
-                            Connect
-                          </Button>
-                          <Button
-                            variant="outline"
-                            // onClick={() => handleViewMore(expert)}
-                            className="flex-1"
-                          >
-                            View More
-                          </Button>
-                        </CardFooter>
-                      </Card>
-                    ))}
+                    {experts.map((expert: any) => {
+                      let statusClass =
+                        "absolute top-2 right-2 inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/10 hover:bg-red-50 cursor-default";
+                      let isDisabled = true;
+                      if (expert.status === "Online") {
+                        statusClass =
+                          "absolute top-2 right-2 inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/10 hover:bg-green-50 cursor-default";
+                        isDisabled = false;
+                      }
+                      return (
+                        <Suspense key={expert._id} fallback={<p>loading...</p>}>
+                          <Card key={expert._id} className="relative max-w-60">
+                            <img
+                              src={expert.photo}
+                              alt={"someone"}
+                              width={200}
+                              height={200}
+                              className="rounded-t-lg object-cover w-full aspect-square"
+                            />
+                            <Badge className={statusClass}>
+                              {expert.status}
+                            </Badge>
+                            <CardContent className="p-4">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <h3 className="font-bold">{expert.name}</h3>
+                                  <p className="text-muted-foreground text-sm">
+                                    {expert.exp} years experience
+                                  </p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="font-bold">
+                                    ₹{expert.hourlyRate}/hr
+                                  </p>
+                                </div>
+                              </div>
+                            </CardContent>
+                            <CardFooter className="flex justify-between items-center p-4 bg-muted">
+                              <Button
+                                id={expert._id}
+                                variant="default"
+                                onClick={() => handleExpert(expert._id)}
+                                className="flex-1 mr-2"
+                                disabled={isDisabled}
+                              >
+                                Connect
+                              </Button>
+                              <Button
+                                variant="outline"
+                                // onClick={() => handleViewMore(expert)}
+                                className="flex-1"
+                              >
+                                View More
+                              </Button>
+                            </CardFooter>
+                          </Card>
+                        </Suspense>
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>

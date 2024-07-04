@@ -60,13 +60,18 @@ import {
   TooltipProvider,
 } from "@/components/ui/tooltip";
 
-import React, { useEffect, useState } from "react";
+import GetFarmerName from "./utils/farmersAPI";
+
+import React, { Suspense, useEffect, useState } from "react";
+import { getUser, updateExpertStatus } from "../utils/apis";
+import Cookies from "js-cookie";
+import { toast } from "@/components/ui/use-toast";
 
 interface DashboardProps {
   name: string;
   email: string;
   role: string;
-  exp: number;
+  exp: number | undefined;
   signOut: () => void;
 }
 
@@ -81,7 +86,50 @@ const ExpertDashboard: React.FC<DashboardProps> = ({
     "text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-red-600 dark:hover:bg-red-700 focus:outline-none dark:focus:ring-red-800"
   );
   const [activeState, setActiveState] = useState("Offline");
+
+  const token = Cookies.get("token");
+  const user = Cookies.get("user");
+  const [isFetching, setIsFetching] = useState(false);
+  const [refreshButtonColor, setRefreshButtonColor] =
+    useState("/reload-light.svg");
+  const [famersList, setFamersList] = useState([]);
+  const GetFarmers = async () => {
+    if (user != undefined) {
+      setIsFetching(true);
+      const result = await getUser(JSON.parse(user)._id);
+      setFamersList(result.results.farmerInvitations);
+      setIsFetching(false);
+    }
+  };
+
+  const setState = async () => {
+    if (activeState === "Offline") {
+      setActiveState("Online");
+      const result = await updateExpertStatus(token, "Online");
+      if (result.status === "success") {
+        setActiveState("Online");
+        toast({
+          title: "You are Online",
+          description: "Profile set to online...",
+        });
+      } else {
+        setActiveState("Offline");
+        toast({
+          variant: "destructive",
+          title: "You are Offline",
+          description: "Profile set to offline...",
+        });
+      }
+    } else {
+      setActiveState("Offline");
+      const result = await updateExpertStatus(token, "Offline");
+      if (result.status === "success") setActiveState("Offline");
+      else setActiveState("Online");
+    }
+  };
+
   useEffect(() => {
+    // getFarmers();
     if (activeState === "Offline") {
       setActiveClass(
         "text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-red-600 dark:hover:bg-red-700 focus:outline-none dark:focus:ring-red-800"
@@ -92,10 +140,6 @@ const ExpertDashboard: React.FC<DashboardProps> = ({
       );
     }
   });
-  function setState() {
-    if (activeState === "Offline") setActiveState("Online");
-    else setActiveState("Offline");
-  }
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
       {/* Side Bar For laptop and desktops */}
@@ -227,14 +271,6 @@ const ExpertDashboard: React.FC<DashboardProps> = ({
             </DropdownMenu>
           </div>
           {/* Search the experts */}
-          <div className="relative ml-auto flex-1 md:grow-0">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search..."
-              className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
-            />
-          </div>
           {/* Profile options */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -302,6 +338,18 @@ const ExpertDashboard: React.FC<DashboardProps> = ({
                 <CardHeader>
                   <CardTitle className="w-full flex justify-between items-center">
                     Farmer Invitations
+                    <span>
+                      <Image
+                        src={refreshButtonColor}
+                        alt="reload button"
+                        width={25}
+                        height={25}
+                        onClick={GetFarmers}
+                        className={`cursor-pointer transition-transform duration-700 ${
+                          isFetching ? "rotate-animation" : ""
+                        }`}
+                      />
+                    </span>
                     <Button onClick={setState} className={activeClass}>
                       {activeState}
                     </Button>
@@ -321,33 +369,46 @@ const ExpertDashboard: React.FC<DashboardProps> = ({
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      <TableRow>
-                        <TableCell>1</TableCell>
-                        <TableCell className="font-medium">
-                          Mukesh Muralidhar Mali
-                        </TableCell>
-                        <TableCell>
-                          {/* <Badge className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20"> */}
-                          <Badge className="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/10 hover:bg-red-50 cursor-default">
-                            Offline
-                          </Badge>
-                        </TableCell>
-                        <TableCell>09:30 AM</TableCell>
-                        <TableCell>
-                          <button
-                            type="button"
-                            className="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 focus:outline-none dark:focus:ring-green-800"
+                      {famersList.map((farmerId, index) => {
+                        return (
+                          <Suspense
+                            key={index}
+                            fallback={
+                              <TableRow>
+                                <td>loading...</td>
+                              </TableRow>
+                            }
                           >
-                            Accept
-                          </button>
-                          <button
-                            type="button"
-                            className="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-red-600 dark:hover:bg-red-700 focus:outline-none dark:focus:ring-red-800"
-                          >
-                            Reject
-                          </button>
-                        </TableCell>
-                      </TableRow>
+                            <TableRow key={index}>
+                              <TableCell>{index + 1}</TableCell>
+                              <TableCell className="font-medium">
+                                {GetFarmerName(farmerId)}
+                              </TableCell>
+                              <TableCell>
+                                {/* <Badge className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20"> */}
+                                <Badge className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/10 hover:bg-green-50 cursor-default">
+                                  Online
+                                </Badge>
+                              </TableCell>
+                              <TableCell>09:30 AM</TableCell>
+                              <TableCell>
+                                <button
+                                  type="button"
+                                  className="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 focus:outline-none dark:focus:ring-green-800"
+                                >
+                                  Accept
+                                </button>
+                                <button
+                                  type="button"
+                                  className="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-red-600 dark:hover:bg-red-700 focus:outline-none dark:focus:ring-red-800"
+                                >
+                                  Reject
+                                </button>
+                              </TableCell>
+                            </TableRow>
+                          </Suspense>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </CardContent>
