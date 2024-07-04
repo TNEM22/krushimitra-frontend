@@ -19,7 +19,6 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <title>Krushimitra</title>
-        <link rel="icon" href="/favicon.ico" sizes="any" />
         <meta property="og:image" content="/favicon.png" />
         <meta property="og:image:type" content="image/png" />
         <meta property="og:image:width" content="1024" />
