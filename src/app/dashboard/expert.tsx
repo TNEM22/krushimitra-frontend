@@ -106,18 +106,18 @@ const ExpertDashboard: React.FC<DashboardProps> = ({
     if (activeState === "Offline") {
       setActiveState("Online");
       const result = await updateExpertStatus(token, "Online");
-      if (result.status === "success") {
-        setActiveState("Online");
-        toast({
-          title: "You are Online",
-          description: "Profile set to online...",
-        });
-      } else {
+      if (result.status != "success") {
         setActiveState("Offline");
         toast({
           variant: "destructive",
           title: "You are Offline",
           description: "Profile set to offline...",
+        });
+      } else {
+        setActiveState("Online");
+        toast({
+          title: "You are Online",
+          description: "Profile set to online...",
         });
       }
     } else {
